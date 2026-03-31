@@ -1,9 +1,14 @@
 #include <Arduino.h>
 #include <ArduinoWebsockets.h>
 
-const char *ssid = "Pan Tadeusz i Spolka";
-const char *password = "adammickiewicz";
+// const char *ssid = "Pan Tadeusz i Spolka";
+// const char *password = "adammickiewicz";
 
+
+const char *ssid = "Matiii-WiFiii";
+const char *password = 0;
+
+#define WS_RECONNECT_INTERVAL (1 * 1000)
 #define PING_INTERVAL (30 * 1000)
 #define MSG_INIT_INTERVAL (5 * 1000)
 #define NEW_MSG_BLINK_TIME (5 * 1000)
@@ -71,23 +76,14 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, 1);
 
+    WiFi.setAutoReconnect(true);
     WiFi.begin(ssid, password);
-    Serial.print("Connecting to WiFi");
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
 
     client.onMessage(onMessageCallback);
     client.onEvent(onEventsCallback);
     client.addHeader("Origin", "https://st.chatango.com");
     client.setInsecure();
-    bool connected = client.connect("wss://s13.chatango.com:8081");
-    if (connected) {
-        Serial.println("Connected to WebSocket server!");
-    } else {
-        Serial.println("Connection failed!");
-    }
+
     lastSend = millis();
     lastPing = millis();
 }
@@ -95,15 +91,25 @@ void setup() {
 void loop() {
     client.poll();
 
-    if (millis() - lastMessageMillis < NEW_MSG_BLINK_TIME) {
-        // TODO: Fancy blinking here
-        digitalWrite(LED_BUILTIN, 0);
-    } else {
-        digitalWrite(LED_BUILTIN, 1);
+    // ====== Connection stuff ======
+    if (!WiFi.isConnected()) {
+        Serial.print("Connecting to WiFi");
+        while (WiFi.status() != WL_CONNECTED) {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            Serial.print(".");
+            delay(500);
+        }
     }
-
+    if (!client.available() && (millis() - lastPing > WS_RECONNECT_INTERVAL)) {
+        lastPing = millis();
+        if (client.connect("wss://s13.chatango.com:8081")) {
+            Serial.println("[I] Connected to Kutango!");
+        } else {
+            Serial.println("[E] Znowu sie nie da połączyć z zasranym Kutango!");
+        }
+    }
     if (client.available()) {
-        // Send a message every 5 seconds
+        // Send init 'v' message if no messages yet
         if (!listeningToMessages && (millis() - lastSend > MSG_INIT_INTERVAL)) {
             lastSend = millis();
             Serial.println("[D] Sending");
@@ -116,4 +122,14 @@ void loop() {
             client.sendBinary("", 1);
         }
     }
+    // ====== Connection stuff ======
+
+    // ====== Visuals ======
+    if (millis() - lastMessageMillis < NEW_MSG_BLINK_TIME) {
+        // TODO: Fancy blinking here
+        digitalWrite(LED_BUILTIN, 0);
+    } else {
+        digitalWrite(LED_BUILTIN, 1);
+    }
+    // ====== Visuals ======
 }
