@@ -2,15 +2,15 @@
 #include <ArduinoWebsockets.h>
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
-#define WS_RECONNECT_INTERVAL (1 * 1000)
-#define PING_INTERVAL (30 * 1000)
+#define WS_RECONNECT_INTERVAL (3 * 1000)
+#define PING_INTERVAL (90 * 1000) // the original client pings every 1.5 minutes
 #define MSG_INIT_INTERVAL (5 * 1000)
-#define NEW_MSG_BLINK_TIME (5 * 1000)
+#define NEW_MSG_BLINK_TIME (10 * 1000)
+#define NEW_MSG_BLINK_N 8
 
-// TODO: CHANGE ALL OF THESE
-#define LED_NEW_MSG LED_BUILTIN
-#define LED_WIFI LED_BUILTIN
-#define LED_POWER LED_BUILTIN
+#define LED_NEW_MSG D5
+#define LED_WIFI D2
+#define LED_POWER D1
 
 WiFiManager wm;
 
@@ -19,7 +19,7 @@ using namespace websockets;
 WebsocketsClient client;
 
 unsigned long lastMessageEpoch = 0;
-unsigned long lastMessageMillis = -1;
+unsigned long lastMessageMillis = 0;
 unsigned long lastPing = 0;
 unsigned long lastSend = 0;
 
@@ -131,11 +131,19 @@ void loop() {
     // ====== Connection stuff ======
 
     // ====== Visuals ======
+    uint8_t currentBlinkValue = 0;
     if (millis() - lastMessageMillis < NEW_MSG_BLINK_TIME) {
-        // TODO: Fancy blinking here
-        digitalWrite(LED_NEW_MSG, 0);
-    } else {
-        digitalWrite(LED_NEW_MSG, 1);
+        // This will make it blink N times in given time
+        // Check out https://www.desmos.com/calculator/sgkcrlhqqo
+        unsigned long delta = millis() - lastMessageMillis;
+        float period = (float) (NEW_MSG_BLINK_TIME) / NEW_MSG_BLINK_N;
+        int rem = (int) delta % (int) period;
+        float raw_cos = cos(
+            ((float) rem) / (period / M_TWOPI)
+        );
+        float fill = ((raw_cos * -1.0f) + 1.0f) / 2.0f;
+        currentBlinkValue = (int) (255.0f * fill);
     }
+    analogWrite(LED_NEW_MSG, currentBlinkValue);
     // ====== Visuals ======
 }
