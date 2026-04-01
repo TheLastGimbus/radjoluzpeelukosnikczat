@@ -1,17 +1,16 @@
 #include <Arduino.h>
 #include <ArduinoWebsockets.h>
-
-// const char *ssid = "Pan Tadeusz i Spolka";
-// const char *password = "adammickiewicz";
-
-
-const char *ssid = "Matiii-WiFiii";
-const char *password = 0;
+#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
 #define WS_RECONNECT_INTERVAL (1 * 1000)
 #define PING_INTERVAL (30 * 1000)
 #define MSG_INIT_INTERVAL (5 * 1000)
 #define NEW_MSG_BLINK_TIME (5 * 1000)
+
+#define LED_NEW_MSG LED_BUILTIN
+#define LED_WIFI LED_BUILTIN
+
+WiFiManager wm;
 
 using namespace websockets;
 
@@ -76,8 +75,12 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, 1);
 
-    WiFi.setAutoReconnect(true);
-    WiFi.begin(ssid, password);
+    wm.setConfigPortalBlocking(false);
+    wm.setConnectTimeout(30);
+    wm.setSaveConnectTimeout(30);
+    wm.setConfigPortalTimeout(300);
+    digitalWrite(LED_WIFI, 1);
+    wm.autoConnect("LUZ-Czat-Mrugacz");
 
     client.onMessage(onMessageCallback);
     client.onEvent(onEventsCallback);
@@ -90,16 +93,14 @@ void setup() {
 
 void loop() {
     client.poll();
+    wm.process();
 
     // ====== Connection stuff ======
-    if (!WiFi.isConnected()) {
-        Serial.print("Connecting to WiFi");
-        while (WiFi.status() != WL_CONNECTED) {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            Serial.print(".");
-            delay(500);
-        }
+    if (WiFi.getMode() != WIFI_STA || !WiFi.isConnected()) {
+        digitalWrite(LED_WIFI, 1);
+        return;
     }
+    digitalWrite(LED_WIFI, 0);
     if (!client.available() && (millis() - lastPing > WS_RECONNECT_INTERVAL)) {
         lastPing = millis();
         if (client.connect("wss://s13.chatango.com:8081")) {
@@ -127,9 +128,9 @@ void loop() {
     // ====== Visuals ======
     if (millis() - lastMessageMillis < NEW_MSG_BLINK_TIME) {
         // TODO: Fancy blinking here
-        digitalWrite(LED_BUILTIN, 0);
+        digitalWrite(LED_NEW_MSG, 0);
     } else {
-        digitalWrite(LED_BUILTIN, 1);
+        digitalWrite(LED_NEW_MSG, 1);
     }
     // ====== Visuals ======
 }
