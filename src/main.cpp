@@ -27,6 +27,10 @@ unsigned long lastSend = 0;
 // and then true when receiving any message
 bool listeningToMessages = false;
 
+bool shouldBeBlinking() {
+    return millis() - lastMessageMillis < NEW_MSG_BLINK_TIME;
+}
+
 void onMessageCallback(const WebsocketsMessage &message) {
     const String txt = message.data();
     Serial.print("[D] Got ws text: ");
@@ -49,7 +53,11 @@ void onMessageCallback(const WebsocketsMessage &message) {
             Serial.print("[I] New message! Updating timestamp to ");
             Serial.println(epoch);
             lastMessageEpoch = epoch;
-            lastMessageMillis = millis();
+            if (shouldBeBlinking()) {
+                Serial.print("[D] ...but won't update lasMsgMillis because currently blinking :)");
+            } else {
+                lastMessageMillis = millis();
+            }
         }
     }
 }
@@ -132,7 +140,7 @@ void loop() {
 
     // ====== Visuals ======
     uint8_t currentBlinkValue = 0;
-    if (millis() - lastMessageMillis < NEW_MSG_BLINK_TIME) {
+    if (shouldBeBlinking()) {
         // This will make it blink N times in given time
         // Check out https://www.desmos.com/calculator/sgkcrlhqqo
         unsigned long delta = millis() - lastMessageMillis;
