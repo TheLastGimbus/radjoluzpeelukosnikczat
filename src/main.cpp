@@ -7,8 +7,10 @@
 #define MSG_INIT_INTERVAL (5 * 1000)
 #define NEW_MSG_BLINK_TIME (5 * 1000)
 
+// TODO: CHANGE ALL OF THESE
 #define LED_NEW_MSG LED_BUILTIN
 #define LED_WIFI LED_BUILTIN
+#define LED_POWER LED_BUILTIN
 
 WiFiManager wm;
 
@@ -72,14 +74,17 @@ void onEventsCallback(const WebsocketsEvent event, const String &data) {
 
 void setup() {
     Serial.begin(115200);
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, 1);
+    pinMode(LED_NEW_MSG, OUTPUT);
+    pinMode(LED_WIFI, OUTPUT);
+    pinMode(LED_POWER, OUTPUT);
+    digitalWrite(LED_NEW_MSG, 0);
+    digitalWrite(LED_WIFI, 1); // to show that connecting to wifi (initially)
+    digitalWrite(LED_POWER, 1); // to show power
 
     wm.setConfigPortalBlocking(false);
     wm.setConnectTimeout(30);
     wm.setSaveConnectTimeout(30);
     wm.setConfigPortalTimeout(300);
-    digitalWrite(LED_WIFI, 1);
     wm.autoConnect("LUZ-Czat-Mrugacz");
 
     client.onMessage(onMessageCallback);
