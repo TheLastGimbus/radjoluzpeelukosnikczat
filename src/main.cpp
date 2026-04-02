@@ -35,7 +35,7 @@ void onMessageCallback(const WebsocketsMessage &message) {
     const String txt = message.data();
     Serial.print("[D] Got ws text: ");
     Serial.println(txt);
-    if (txt.length() > 16 && txt[0] == 'i') {
+    if (txt.length() > 16) {
         Serial.println("[D] Looks like a message event - parsing for timestamp...");
         listeningToMessages = true;
         const int firstIdx = txt.indexOf(':');
@@ -48,7 +48,7 @@ void onMessageCallback(const WebsocketsMessage &message) {
             Serial.println("[W] Second colon not found :( aborting");
             return;
         }
-        const unsigned long epoch = txt.substring(firstIdx + 1, secondIdx).toInt();
+        long epoch = txt.substring(firstIdx + 1, secondIdx).toInt();
         if (epoch > lastMessageEpoch) {
             Serial.print("[I] New message! Updating timestamp to ");
             Serial.println(epoch);
@@ -56,8 +56,11 @@ void onMessageCallback(const WebsocketsMessage &message) {
             if (shouldBeBlinking()) {
                 Serial.print("[D] ...but won't update lasMsgMillis because currently blinking :)");
             } else {
+                Serial.println("[I] It's new! Blinking now :)");
                 lastMessageMillis = millis();
             }
+        } else {
+            Serial.println("[D] ...but it's epoch is older than last one - ignoring");
         }
     }
 }
@@ -129,6 +132,7 @@ void loop() {
             Serial.println("[D] Sending");
             client.sendBinary("v", 2);
             client.sendBinary("bauth:akademickieradioluz:::", 29);
+            client.sendBinary("msgbg:0", 8);
         }
         // Periodic ping
         if (millis() - lastPing > PING_INTERVAL) {
