@@ -3,7 +3,7 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
 #define WS_RECONNECT_INTERVAL (3 * 1000)
-#define PING_INTERVAL (90 * 1000) // the original client pings every 1.5 minutes
+#define PING_INTERVAL (80 * 1000) // the original client pings every 1.5 minutes
 #define MSG_INIT_INTERVAL (5 * 1000)
 #define NEW_MSG_BLINK_TIME (10 * 1000)
 #define NEW_MSG_BLINK_N 8
