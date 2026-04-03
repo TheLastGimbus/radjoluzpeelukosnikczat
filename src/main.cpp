@@ -7,6 +7,7 @@
 #define MSG_INIT_INTERVAL (5 * 1000)
 #define NEW_MSG_BLINK_TIME (10 * 1000)
 #define NEW_MSG_BLINK_N 8
+#define NEW_MSG_INITIAL_IGNORE (30 * 1000)
 
 #define LED_NEW_MSG D5
 #define LED_WIFI D2
@@ -28,7 +29,10 @@ unsigned long lastSend = 0;
 bool listeningToMessages = false;
 
 bool shouldBeBlinking() {
-    return millis() - lastMessageMillis < NEW_MSG_BLINK_TIME;
+    if (millis() < NEW_MSG_INITIAL_IGNORE) {
+        return false;
+    }
+    return (millis() - lastMessageMillis) < NEW_MSG_BLINK_TIME;
 }
 
 void onMessageCallback(const WebsocketsMessage &message) {
